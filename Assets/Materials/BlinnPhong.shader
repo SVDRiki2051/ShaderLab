@@ -4,7 +4,7 @@ Shader "URPCustom/BlinnPhong" {
         _MainTex("Texture",2D)="White"{}
         _DiffuseColor("DiffuseColor",Color)=(1,1,1,1)
         _SpecularColor("SpecularColor",Color)=(1,1,1,1)   //控制材质的高光反射颜色
-        _Gloss("Gloss",Range(8,32))=8   //用于控制高光区域的大小
+        _Gloss("Gloss",Range(8,256))=20   //用于控制高光区域的大小
     }
     
     SubShader
@@ -74,10 +74,10 @@ Shader "URPCustom/BlinnPhong" {
                 Light mlight=GetMainLight();
                 float3 LightDirWS=normalize(mlight.direction);
                 float3 h=normalize(LightDirWS+i.viewDirWS);
-                float diff=saturate(dot(h,i.normalWS));        //如果不用saturate截停，会出现超出物体的大范围反光！！！
-                half4 specolor=_SpecularColor*pow(diff,_Gloss);
-                half4 texcolor=(dot(LightDirWS,i.normalWS)*0.5+0.5)*tex;
-                //half4 texcolor=saturate(dot(LightDirWS,i.normalWS))*tex;
+                float spc=saturate(dot(h,i.normalWS));        //如果不用saturate截停，会出现超出物体的大范围反光！！！
+                half4 specolor=_SpecularColor*pow(spc,_Gloss);
+                half4 texcolor=(dot(LightDirWS,i.normalWS)*0.5+0.5)*tex;   //半兰伯特
+                //half4 texcolor=saturate(dot(LightDirWS,i.normalWS))*tex;  //兰伯特
                 texcolor*=half4(mlight.color,1);
                 return specolor+texcolor;
             }

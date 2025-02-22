@@ -95,7 +95,7 @@ Shader "Texture"
                 half4 diff = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, i.texcoord.xy) * halflambert * _BaseColor *
                     half4(mlight.color, 1);
                 float spe = saturate(dot(normalize(normalize(mlight.direction) + normalize(_WorldSpaceCameraPos - posWS)), norWS));
-                spe *= pow(spe, _Gloss);
+                spe = pow(spe, _Gloss);
                 return diff + spe * _SpecularColor;
             }
             ENDHLSL

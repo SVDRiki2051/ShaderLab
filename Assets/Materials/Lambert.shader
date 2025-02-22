@@ -60,7 +60,7 @@ Shader "Lambert"
             {
                 v2f o;
                 o.positionCS = TransformObjectToHClip(i.positionOS.xyz);
-                o.texcoord = TRANSFORM_TEX(i.texcoord, _MainTex);
+                o.texcoord = TRANSFORM_TEX(i.texcoord, _MainTex);  //计算经过平铺和偏移后的纹理坐标
                 o.normalWS = TransformObjectToWorldNormal(i.normal, true);
                 return o;
             }

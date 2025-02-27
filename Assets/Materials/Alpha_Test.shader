@@ -4,8 +4,10 @@ Shader "Unlit/Alpha_Test"
     {
         _MainTex ("Texture", 2D) = "white" {}
         _BaseColor("Color",Color)=(1,1,1,1)
-        _CutOff("Alpha CutOff",Range(0,1))=0.6
+        //_CutOff("Alpha CutOff",Range(0,1))=0.6
+        _Cutoff("Cutoff",Float)=1
         _AlphaTex("Alpha Test",2D)="White"{}
+        [HDR]_BurnColor("BurnColor",Color)=(2.5,1,1,1) //灼烧光颜色   
     }
     SubShader
     {
@@ -13,7 +15,8 @@ Shader "Unlit/Alpha_Test"
         {
             "RenderPipeline"="UniversalRenderPipeline"
             "IgnoreProjector"="True"
-            "RenderType"="Transparent"
+            //"RenderType"="Transparent"
+            "RenderType"="TransparentCutout"
             "Queue"="AlphaTest"
         }
         
@@ -24,8 +27,9 @@ Shader "Unlit/Alpha_Test"
         CBUFFER_START(UnityPerMaterial)
         float4 _MainTex_ST;
         float4 _BaseColor;
-        float _CutOff;
+        float _Cutoff;
         float4 _AlphaTex_ST;
+        half4 _BurnColor;
         CBUFFER_END
 
         TEXTURE2D(_MainTex);
@@ -55,6 +59,9 @@ Shader "Unlit/Alpha_Test"
                 "LightMode"="UniversalForward"
             }
             
+            //Turn off culling
+            Cull Off
+            
             HLSLPROGRAM
             #pragma vertex VERT
             #pragma fragment FRAG
@@ -71,14 +78,17 @@ Shader "Unlit/Alpha_Test"
 
             half4 FRAG(v2f i):SV_TARGET
             {
-                Light mlight=GetMainLight();
-                half4 LightColor=half4(mlight.color,1);
-                float3 LightDir=normalize(mlight.direction);
-                half4 tex=SAMPLE_TEXTURE2D(_AlphaTex,sampler_AlphaTex,i.texcoord.zw);
-                clip(tex.a-_CutOff);
+                // Light mlight=GetMainLight();
+                // half4 LightColor=half4(mlight.color,1);
+                // float3 LightDir=normalize(mlight.direction);
+                half4 tex=SAMPLE_TEXTURE2D(_AlphaTex,sampler_AlphaTex,i.texcoord.zw)*_BaseColor;
+                //clip(tex.a-_CutOff);
+                clip(step(_Cutoff,tex.a)-0.01);
                 //half4 diff=tex*LightColor*_BaseColor*saturate(dot(LightDir,i.normalWS));
-                half4 diff=tex*LightColor*_BaseColor*(saturate(dot(LightDir,i.normalWS))*0.5+0.5);
-                return diff;
+                //half4 diff=tex*LightColor*_BaseColor*(saturate(dot(LightDir,i.normalWS))*0.5+0.5);
+                //return diff;
+                tex=lerp(tex,_BurnColor,step(tex.a,saturate(_Cutoff+0.1)));
+                return tex;
             }
             ENDHLSL
             

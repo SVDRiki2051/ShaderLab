@@ -1,4 +1,4 @@
-Shader "Unlit/Alpha_Blend"
+Shader "Unlit/Alpha_BlendZWrite"
 {
     Properties
     {
@@ -48,52 +48,12 @@ Shader "Unlit/Alpha_Blend"
             float4 texcoord:TEXCOORD0;
             float3 normalWS:NORMAL;
         };
-
-        v2f VERT(a2v i)
-            {
-                v2f o;
-                o.positionCS=TransformObjectToHClip(i.positionOS);
-                o.texcoord.xy=TRANSFORM_TEX(i.texcoord,_MainTex);
-                o.texcoord.zw=TRANSFORM_TEX(i.texcoord,_AlphaTex);
-                o.normalWS=TransformObjectToWorldNormal(i.normalOS,true);
-                return o;
-            }
-
-            half4 FRAG(v2f i):SV_TARGET
-            {
-                float4 alpha=SAMPLE_TEXTURE2D(_AlphaTex,sampler_AlphaTex,i.texcoord.zw)*_BaseColor;  //取alpha贴图的r通道作为a（混合因子）去混合
-                //half4 alpha=SAMPLE_TEXTURE2D(_AlphaTex,sampler_AlphaTex,i.texcoord.zw);
-                // Light mlight=GetMainLight();
-                // half4 LightColor=half4(mlight.color,1);
-                // float3 LightDir=normalize(mlight.direction);
-                //half4 diff=tex*LightColor*(saturate(dot(i.normalWS,LightDir)));
-                // half4 diff=tex*LightColor*(dot(i.normalWS,LightDir)*0.5+0.5);
-                return half4(alpha.xyz, alpha.w * _AlphaScale);  //设置了该片元着色器返回值中的透明通道，它是纹理像素的透明通道和材质参数_AlphaScale的乘积
-                //return half4(diff.xyz,alpha*_AlphaScale);
-                //return tex*alpha;
-                //return diff*alpha;
-            }
         ENDHLSL
         
         Pass
         {
-            Tags
-            {
-                "LightMode"="SRPDefaultUnlit"
-            }
-            
-            ZWrite Off                       //深度写入设置为关闭
-            //开启并设置了该Pass的混合模式。将源颜色（该片元着色器产生的颜色）的混合因子设为SrcAlpha，
-            //把目标颜色（已经存在于颜色缓冲中的颜色）的混合因子设为OneMinusSrcAlpha
-            Blend SrcAlpha OneMinusSrcAlpha
-            Cull Front
-            
-            
-            HLSLPROGRAM
-            #pragma vertex VERT
-            #pragma fragment FRAG
-
-            ENDHLSL
+            ZWrite On
+            ColorMask 0
         }
 
         Pass
@@ -106,15 +66,40 @@ Shader "Unlit/Alpha_Blend"
             ZWrite Off                       //深度写入设置为关闭
             //开启并设置了该Pass的混合模式。将源颜色（该片元着色器产生的颜色）的混合因子设为SrcAlpha，
             //把目标颜色（已经存在于颜色缓冲中的颜色）的混合因子设为OneMinusSrcAlpha
-            Blend SrcAlpha OneMinusSrcAlpha
-            Cull Back
+            Blend SrcAlpha OneMinusSrcAlpha  
+            //在代码中如何体现混合？
+            //在片元着色器执行完毕后
             
             
             HLSLPROGRAM
             #pragma vertex VERT
             #pragma fragment FRAG
 
-           
+            v2f VERT(a2v i)
+            {
+                v2f o;
+                o.positionCS=TransformObjectToHClip(i.positionOS);
+                o.texcoord.xy=TRANSFORM_TEX(i.texcoord,_MainTex);
+                o.texcoord.zw=TRANSFORM_TEX(i.texcoord,_AlphaTex);
+                o.normalWS=TransformObjectToWorldNormal(i.normalOS,true);
+                return o;
+            }
+
+            half4 FRAG(v2f i):SV_TARGET
+            {
+                half4 tex=SAMPLE_TEXTURE2D(_MainTex,sampler_MainTex,i.texcoord.xy)*_BaseColor;
+                float alpha=SAMPLE_TEXTURE2D(_AlphaTex,sampler_AlphaTex,i.texcoord.zw).x;  //取alpha贴图的r通道作为a（混合因子）去混合
+                //half4 alpha=SAMPLE_TEXTURE2D(_AlphaTex,sampler_AlphaTex,i.texcoord.zw);
+                // Light mlight=GetMainLight();
+                // half4 LightColor=half4(mlight.color,1);
+                // float3 LightDir=normalize(mlight.direction);
+                //half4 diff=tex*LightColor*(saturate(dot(i.normalWS,LightDir)));
+                // half4 diff=tex*LightColor*(dot(i.normalWS,LightDir)*0.5+0.5);
+                return half4(tex.xyz,alpha*_AlphaScale);  //设置了该片元着色器返回值中的透明通道，它是纹理像素的透明通道和材质参数_AlphaScale的乘积
+                //return half4(diff.xyz,alpha*_AlphaScale);
+                //return tex*alpha;
+                //return diff*alpha;
+            }
             ENDHLSL
         }
     }
